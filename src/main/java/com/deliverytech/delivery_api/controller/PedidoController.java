@@ -1,14 +1,21 @@
 package com.deliverytech.delivery_api.controller;
 
+import com.deliverytech.delivery_api.dto.ItemPedidoDTO;
+import com.deliverytech.delivery_api.dto.PedidoDTO;
+import com.deliverytech.delivery_api.dto.PedidoResponseDTO;
+import com.deliverytech.delivery_api.dto.StatusPedidoDTO;
 import com.deliverytech.delivery_api.entity.Pedido;
 import com.deliverytech.delivery_api.enums.StatusPedido;
 import com.deliverytech.delivery_api.service.PedidoService;
+
+import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,76 +35,18 @@ public class PedidoController {
     um cliente e um restaurante através dos parâmetros da requisição (@RequestParam)
     */
     @PostMapping
-    public ResponseEntity<?> criarPedido(@RequestParam Long clienteId,
-                                          @RequestParam Long restauranteId) {
-        try {
-            Pedido pedido = pedidoService.criarPedido(clienteId, restauranteId);
-            // retornando o pedido criado com status 201 Created
-            return ResponseEntity.status(HttpStatus.CREATED).body(pedido);
-            // capture através do illegalArgumentException caso o cliente ou
-            // restaurante não existam, e retorne um status 400 Bad Request
-        } catch (IllegalArgumentException e) {
-            // retornando o erro com status 400 Bad Request e a mensagem de erro
-            return ResponseEntity.badRequest().body("Erro: " + e.getMessage());
-        } catch (Exception e) {
-            // retornando o erro com status 500 Internal Server Error e a mensagem de erro
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                // corpo da resposta com a mensagem de erro
-                .body("Erro interno do servidor");
-        }
-    }
-
-    /*
-    Adicionar item ao pedido
-    através do verbo POST estamos adicionando um produto (e sua quantidade)
-    a um pedido já existente, identificado pelo pedidoId na URL
-    */
-    @PostMapping("/{pedidoId}/itens")
-    public ResponseEntity<?> adicionarItem(@PathVariable Long pedidoId,
-                                            @RequestParam Long produtoId,
-                                            @RequestParam Integer quantidade) {
-        try {
-            Pedido pedido = pedidoService.adicionarItem(pedidoId, produtoId, quantidade);
-            // retornando o pedido atualizado com o novo item, status 200 OK
-            return ResponseEntity.ok(pedido);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Erro: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Erro interno do servidor");
-        }
-    }
-
-    /*
-    Confirmar pedido
-    através do verbo PUT estamos alterando o status do pedido para CONFIRMADO,
-    encerrando a fase de montagem (adição de itens)
-    */
-    @PutMapping("/{pedidoId}/confirmar")
-    public ResponseEntity<?> confirmarPedido(@PathVariable Long pedidoId) {
-        try {
-            Pedido pedido = pedidoService.confirmarPedido(pedidoId);
-            return ResponseEntity.ok(pedido);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Erro: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Erro interno do servidor");
-        }
+    public ResponseEntity<PedidoResponseDTO> criarPedido(@Valid @RequestBody PedidoDTO dto) {
+        PedidoResponseDTO pedido = pedidoService.criarPedido(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(pedido);
     }
 
     /*
     Buscar pedido por ID
     */
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
-        Optional<Pedido> pedido = pedidoService.buscarPorId(id);
-
-        if (pedido.isPresent()) {
-            return ResponseEntity.ok(pedido.get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<PedidoResponseDTO> buscarPorId(@PathVariable Long id) {
+        PedidoResponseDTO pedido = pedidoService.buscarPedidoPorId(id);
+        return ResponseEntity.ok(pedido);
     }
 
     /*
@@ -106,25 +55,9 @@ public class PedidoController {
     ordenado (no repository) do mais recente para o mais antigo
     */
     @GetMapping("/cliente/{clienteId}")
-    public ResponseEntity<List<Pedido>> listarPorCliente(@PathVariable Long clienteId) {
-        List<Pedido> pedidos = pedidoService.listarPorCliente(clienteId);
+    public ResponseEntity<List<PedidoResponseDTO>> buscarPorCliente(@PathVariable Long clienteId) {
+        List<PedidoResponseDTO> pedidos = pedidoService.buscarPedidosPorCliente(clienteId);
         return ResponseEntity.ok(pedidos);
-    }
-
-    /*
-    Buscar pedido por número
-    útil para o cliente rastrear o próprio pedido usando o
-    código (numeroPedido) informado na hora da compra
-    */
-    @GetMapping("/numero/{numeroPedido}")
-    public ResponseEntity<?> buscarPorNumero(@PathVariable String numeroPedido) {
-        Optional<Pedido> pedido = pedidoService.buscarPorNumero(numeroPedido);
-
-        if (pedido.isPresent()) {
-            return ResponseEntity.ok(pedido.get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
     }
 
     /*
@@ -132,21 +65,12 @@ public class PedidoController {
     através do verbo PUT estamos alterando o status do pedido
     (ex: PENDENTE -> CONFIRMADO -> PREPARANDO -> SAIU_PARA_ENTREGA -> ENTREGUE)
     */
-    @PutMapping("/{pedidoId}/status")
-    public ResponseEntity<?> atualizarStatus(@PathVariable Long pedidoId,
-                                              @RequestParam StatusPedido status) {
-        try {
-            // ATENÇÃO: este método precisa existir no PedidoService.
-            // Ele deve apenas alterar o status do pedido para o valor recebido,
-            // e não deve reutilizar a lógica de cancelamento.
-            Pedido pedido = pedidoService.atualizarStatus(pedidoId, status);
-            return ResponseEntity.ok(pedido);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Erro: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Erro interno do servidor");
-        }
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<PedidoResponseDTO> atualizarStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody StatusPedidoDTO statusDTO) {
+        PedidoResponseDTO pedido = pedidoService.atualizarStatusPedido(id, statusDTO.getStatus());
+        return ResponseEntity.ok(pedido);
     }
 
     /*
@@ -154,17 +78,16 @@ public class PedidoController {
     através do verbo PUT estamos alterando o status do pedido para CANCELADO,
     com um motivo opcional informado via parâmetro da requisição
     */
-    @PutMapping("/{pedidoId}/cancelar")
-    public ResponseEntity<?> cancelarPedido(@PathVariable Long pedidoId,
-                                             @RequestParam(required = false) String motivo) {
-        try {
-            Pedido pedido = pedidoService.cancelarPedido(pedidoId, motivo);
-            return ResponseEntity.ok(pedido);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Erro: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Erro interno do servidor");
-        }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelarPedido(@PathVariable Long id) {
+        pedidoService.cancelarPedido(id);
+        return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/calcular")
+    public ResponseEntity<BigDecimal> calcularTotal(@Valid @RequestBody List<ItemPedidoDTO> itens) {
+        BigDecimal total = pedidoService.calcularTotalPedido(itens);
+        return ResponseEntity.ok(total);
+    }
+
 }
