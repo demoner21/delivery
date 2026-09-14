@@ -16,7 +16,7 @@ import java.util.Optional;
 
 // Iniciando o controller REST para o Cliente
 @RestController
-@RequestMapping("/clientesxpto")
+@RequestMapping("/clientes")
 @CrossOrigin(origins = "*") // Permições de acesso para qualquer origem utilizando a expressão "*"
 public class ClienteController {
 

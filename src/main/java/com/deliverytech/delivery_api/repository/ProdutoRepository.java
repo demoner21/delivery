@@ -53,4 +53,10 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     // Contar produtos por restaurante
     @Query("SELECT COUNT(p) FROM Produto p WHERE p.restaurante.id = :restauranteId")
     long countByRestauranteId(@Param("restauranteId") Long restauranteId);
+
+    List<Produto> findByNomeContainingIgnoreCase(String nome);
+
+    List<Produto> findByRestauranteId(Long restauranteId);
+    
+    List<Produto> findByRestauranteIdAndDisponivel(Long restauranteId, Boolean disponivel);
 }

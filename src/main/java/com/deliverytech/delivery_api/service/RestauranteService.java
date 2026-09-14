@@ -1,125 +1,41 @@
 package com.deliverytech.delivery_api.service;
 
-import com.deliverytech.delivery_api.entity.Restaurante;
-import com.deliverytech.delivery_api.repository.RestauranteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.deliverytech.delivery_api.dto.RestauranteDTO;
+import com.deliverytech.delivery_api.dto.RestauranteResponseDTO;
 
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
-// Iniciando a classe de serviço para o Restaurante
-@Service
-@Transactional
-public class RestauranteService {
+/*
+ Contrato da camada de serviço de Restaurante.
+ A implementação fica em service.impl.RestauranteServiceImpl
+*/
+public interface RestauranteService {
 
-    // injetando o repositório de Restaurante
-    @Autowired
-    private RestauranteRepository restauranteRepository;
+    // Cadastra um novo restaurante a partir do DTO recebido
+    RestauranteResponseDTO cadastrar(RestauranteDTO dto);
 
-    /*
-     Cadastrando novo restaurante e lançando exceção caso o nome já esteja cadastrado
-     através do método findByNome do repositório de Restaurante
-     e retornando o restaurante cadastrado através do método save do repositório de Restaurante
-     usando o metodo illegalArgumentException para lançar
-     a exceção caso o nome já esteja cadastrado
-     */
-    public Restaurante cadastrar(Restaurante restaurante) {
-        // validação de nome único
-        if (restauranteRepository.findByNome(restaurante.getNome()).isPresent()) {
-            throw new IllegalArgumentException("Restaurante já cadastrado: " + restaurante.getNome());
-        }
+    // Lista restaurantes com filtros opcionais (categoria/ativo) e paginação
+    Page<RestauranteResponseDTO> listarRestaurantes(String categoria, Boolean ativo, Pageable pageable);
 
-        // validação de restaurante
-        validarDadosRestaurante(restaurante);
+    // Busca um restaurante pelo id, lançando exceção caso não exista
+    RestauranteResponseDTO buscarRestaurantePorId(Long id);
 
-        // definindo o status do restaurante como ativo
-        restaurante.setAtivo(true);
+    // Atualiza os dados de um restaurante existente
+    RestauranteResponseDTO atualizarRestaurante(Long id, RestauranteDTO dto);
 
-        return restauranteRepository.save(restaurante);
-    }
+    // Alterna o status ativo/inativo do restaurante
+    RestauranteResponseDTO alterarStatusRestaurante(Long id);
 
-    /*
-    Buscar o restaurante por Id
-    */
-    @Transactional(readOnly = true)
-    public Optional<Restaurante> buscarPorId(Long id) {
-        return restauranteRepository.findById(id);
-    }
+    // Busca restaurantes ativos por categoria
+    List<RestauranteResponseDTO> buscarRestaurantesPorCategoria(String categoria);
 
-    /*
-    Listar os restaurantes ativos
-    */
-    @Transactional(readOnly = true)
-    public List<Restaurante> listarAtivos() {
-        return restauranteRepository.findByAtivoTrue();
-    }
+    // Calcula a taxa de entrega de um restaurante para um CEP específico
+    BigDecimal calcularTaxaEntrega(Long id, String cep);
 
-    /*
-    Buscar restaurantes ativos por categoria
-    */
-    @Transactional(readOnly = true)
-    public List<Restaurante> buscarPorCategoria(String categoria) {
-        return restauranteRepository.findByCategoriaAndAtivoTrue(categoria);
-    }
-
-    /*
-    Atualizar os dados do restaurante
-    */
-    public Restaurante atualizar(Long id, Restaurante restauranteAtualizado) {
-        // buscando o restaurante pelo id e lançando exceção caso não seja encontrado
-        Restaurante restaurante = buscarPorId(id)
-                .orElseThrow(() -> new IllegalArgumentException("Restaurante não encontrado: " + id));
-
-        // Verificar se o nome não está sendo usado por outro restaurante (se mudou)
-        if (!restaurante.getNome().equals(restauranteAtualizado.getNome()) &&
-                restauranteRepository.findByNome(restauranteAtualizado.getNome()).isPresent()) {
-            // lançando exceção caso o nome já esteja cadastrado
-            throw new IllegalArgumentException("Nome já cadastrado: " + restauranteAtualizado.getNome());
-        }
-
-        // Atualizando os dados do restaurante com os dados do restauranteAtualizado
-        restaurante.setNome(restauranteAtualizado.getNome());
-        restaurante.setCategoria(restauranteAtualizado.getCategoria());
-        restaurante.setEndereco(restauranteAtualizado.getEndereco());
-        restaurante.setTelefone(restauranteAtualizado.getTelefone());
-        restaurante.setTaxaEntrega(restauranteAtualizado.getTaxaEntrega());
-
-        // retornando o restaurante atualizado através do método save do repositório de Restaurante
-        return restauranteRepository.save(restaurante);
-    }
-
-    /* inativação do restaurante através do metodo void */
-    public void inativar(Long id) {
-        // restaurante acessando restaurante e buscando pelo id
-        Restaurante restaurante = buscarPorId(id)
-                // através do método orElseThrow lançando exceção caso o restaurante não seja encontrado
-                .orElseThrow(() -> new IllegalArgumentException("Restaurante não encontrado: " + id));
-
-        // definindo o status do restaurante como inativo
-        restaurante.setAtivo(false);
-
-        // salvando no banco de dados
-        restauranteRepository.save(restaurante);
-    }
-
-    /*
-        Validação das regras de Negocio do Restaurante,
-        como nome e taxa de entrega
-    */
-    private void validarDadosRestaurante(Restaurante restaurante) {
-        // verificando se o nome do restaurante está preenchido
-        if (restaurante.getNome() == null || restaurante.getNome().trim().isEmpty()) {
-            throw new IllegalArgumentException("Nome é obrigatório");
-        }
-        // verificando se a taxa de entrega não é negativa
-        if (restaurante.getTaxaEntrega() != null &&
-                // verificando se a taxa de entrega é menor que zero
-                restaurante.getTaxaEntrega().compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Taxa de entrega não pode ser negativa");
-        }
-    }
+    // Busca restaurantes próximos a um CEP dentro de um raio (km)
+    List<RestauranteResponseDTO> buscarRestaurantesProximos(String cep, Integer raio);
 }

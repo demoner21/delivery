@@ -1,7 +1,6 @@
 package com.deliverytech.delivery_api.service.impl;
 
 import com.deliverytech.delivery_api.dto.*;
-import com.deliverytech.delivery_api.config.ModelMapperConfig;
 import com.deliverytech.delivery_api.entity.*;
 import com.deliverytech.delivery_api.enums.StatusPedido;
 import com.deliverytech.delivery_api.exception.BusinessException;
@@ -10,6 +9,8 @@ import com.deliverytech.delivery_api.repository.*;
 import com.deliverytech.delivery_api.service.PedidoService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +18,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.lang.reflect.Method;
 
@@ -138,6 +138,27 @@ public class PedidoServiceImpl implements PedidoService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PedidoResponseDTO> buscarPedidosPorRestaurante(Long restauranteId, StatusPedido status) {
+        List<Pedido> pedidos = pedidoRepository.findAll().stream()
+            .filter(pedido -> pedido.getRestaurante() != null 
+                && restauranteId.equals(pedido.getRestaurante().getId()))
+            .filter(pedido -> status == null || status.equals(getPedidoStatus(pedido)))
+            .collect(Collectors.toList());
+
+        return pedidos.stream()
+            .map(pedido -> modelMapper.map(pedido, PedidoResponseDTO.class))
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PedidoResponseDTO> listarPedidos(Pageable pageable) {
+        return pedidoRepository.findAll(pageable)
+            .map(pedido -> modelMapper.map(pedido, PedidoResponseDTO.class));
+    }
+
+    @Override
     public PedidoResponseDTO atualizarStatusPedido(Long id, StatusPedido novoStatus) {
         Pedido pedido = pedidoRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado"));
@@ -157,10 +178,11 @@ public class PedidoServiceImpl implements PedidoService {
 
     @Override
     @Transactional(readOnly = true)
-    public BigDecimal calcularTotalPedido(List<ItemPedidoDTO> itens) {
+    public CalculoPedidoResponseDTO calcularTotalPedido(CalculoPedidoDTO dto) {
         BigDecimal total = BigDecimal.ZERO;
 
-        for (ItemPedidoDTO item : itens) {
+        for (Object itemObject : dto.getItens()) {
+            ItemPedidoDTO item = (ItemPedidoDTO) itemObject;
             Produto produto = produtoRepository.findById(item.getProdutoId())
                 .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
 
@@ -169,7 +191,7 @@ public class PedidoServiceImpl implements PedidoService {
             total = total.add(subtotalItem);
         }
 
-        return total;
+        return new CalculoPedidoResponseDTO(total);
     }
 
     @Override
