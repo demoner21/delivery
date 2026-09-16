@@ -33,6 +33,11 @@ public class ApiResponseWrapper<T> {
         return new ApiResponseWrapper<>(true, data, message);
     }
 
+    /* Quando usamor a class <T> (com uma Letra T ou qualquer outra letra)
+    Nós estamos dizendo pro java que nós não sabemos o tipo da variavel,
+    mas queremos garantir que em todo lugar que aprecer T 
+    ela vai garantir o mesmo tipo seja usado
+    */
     public static <T> ApiResponseWrapper<T> error(String message) {
         return new ApiResponseWrapper<>(false, null, message);
     }
