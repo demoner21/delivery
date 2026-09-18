@@ -2,6 +2,9 @@ package com.deliverytech.delivery_api.exception;
 
 import com.deliverytech.delivery_api.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -37,25 +40,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(
-            MethodArgumentNotValidException ex, HttpServletRequest request) {
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex, HttpServletRequest request) {
 
         Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
+        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+            String propertyPath = violation.getPropertyPath().toString();
+            // pega só o nome do último nó do path (ex: "buscarProximos.cep" -> "cep")
+            String field = propertyPath.contains(".")
+                ? propertyPath.substring(propertyPath.lastIndexOf('.') + 1)
+                : propertyPath;
+            errors.put(field, violation.getMessage());
+        }
 
         ErrorResponse errorResponse = new ErrorResponse(
             HttpStatus.BAD_REQUEST.value(),
             "Dados inválidos",
-            "Ocorreu um erro na validação dos campos enviados.",
+            "Ocorreu um erro na validação dos parâmetros enviados.",
             request.getRequestURI()
         );
-        
-        // Passamos o mapa de erros para o atributo details do novo ErrorResponse
+
         errorResponse.setDetails(errors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
