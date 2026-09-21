@@ -86,7 +86,8 @@ public class SecurityConfig {
                     "/**.html",
                     "/**.css",
                     "/**.js",
-                    "/**.ico"
+                    "/**.ico",
+                    "/jwt-demo.html"
                 ).permitAll()
 
                 // Swagger
