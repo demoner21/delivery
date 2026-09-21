@@ -37,6 +37,10 @@ public class ClienteServiceImpl implements ClienteService {
             throw new BusinessException("Email já cadastrado: " + dto.getEmail());
         }
 
+        if (clienteRepository.existsByCpf(dto.getCpf())) {
+            throw new BusinessException("CPF já cadastrado: " + dto.getCpf());
+        }
+
         // Converter DTO para entidade
         Cliente cliente = modelMapper.map(dto, Cliente.class);
         cliente.setAtivo(true);
@@ -46,6 +50,15 @@ public class ClienteServiceImpl implements ClienteService {
 
         // Retornar DTO de resposta
         return modelMapper.map(clienteSalvo, ClienteResponseDTO.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ClienteResponseDTO buscarClientePorCpf(String cpf) {
+        Cliente cliente = clienteRepository.findByCpf(cpf)
+            .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado com CPF: " + cpf));
+
+        return modelMapper.map(cliente, ClienteResponseDTO.class);
     }
 
     @Override
@@ -76,9 +89,14 @@ public class ClienteServiceImpl implements ClienteService {
             clienteRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new BusinessException("Email já cadastrado: " + dto.getEmail());
         }
+        
+        if (!cliente.getCpf().equals(dto.getCpf()) && clienteRepository.existsByCpf(dto.getCpf())) {
+            throw new BusinessException("CPF já cadastrado: " + dto.getCpf());
+        }
 
         // Atualizar dados
         cliente.setNome(dto.getNome());
+        cliente.setCpf(dto.getCpf());
         cliente.setEmail(dto.getEmail());
         cliente.setTelefone(dto.getTelefone());
         cliente.setEndereco(dto.getEndereco());

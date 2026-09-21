@@ -8,6 +8,10 @@ public class ClienteDTO {
     @Size(min = 2, max =100, message = "Nome deve ter entre 2 e 100 caracteres")
     private String nome;
 
+    @NotBlank(message = "CPF é obrigatório")
+    @Pattern(regexp = "^[0-9]{11}$", message = "CPF deve conter exatamente 11 dígitos")
+    private String cpf;
+
     @NotBlank(message  = "")
     @Email(message = "Email e obrigatorio")
     private String email;
@@ -23,6 +27,9 @@ public class ClienteDTO {
     // Getter e Setter
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
+
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email;}

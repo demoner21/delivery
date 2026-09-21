@@ -18,4 +18,7 @@ public interface ClienteService {
     ClienteResponseDTO ativarDesativarCliente(Long id);
 
     List<ClienteResponseDTO> listarClientesAtivos();
+
+    ClienteResponseDTO buscarClientePorCpf(String cpf);
+
 }
