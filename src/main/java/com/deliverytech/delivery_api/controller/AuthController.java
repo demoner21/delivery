@@ -10,6 +10,10 @@ import com.deliverytech.delivery_api.security.JwtUtil;
 import com.deliverytech.delivery_api.security.SecurityUtils;
 import com.deliverytech.delivery_api.service.AuthService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
+@Tag(name = "Autenticação", description = "Operações realcionadas a autorização e autenticação do usuario")
 public class AuthController {
     
     @Autowired
@@ -37,6 +42,13 @@ public class AuthController {
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
 
+    @Operation(summary = "Criar pedido",
+        description = "endpoint de login da aplicação"
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "401", description = "Credenciais inválida"),
+        @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+    })
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
         try {

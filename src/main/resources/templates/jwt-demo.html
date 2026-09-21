@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Demo — DeliveryTech</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #111118;
+            --surface2: #1a1a24;
+            --border: #2a2a3a;
+            --accent: #6c63ff;
+            --accent2: #00d4aa;
+            --accent3: #ff6b6b;
+            --text: #e8e8f0;
+            --muted: #6b6b85;
+            --success: #00d4aa;
+            --error: #ff6b6b;
+            --warning: #ffa94d;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Syne', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .layout {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 24px;
+        }
+
+        /* Header */
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            width: 44px;
+            height: 44px;
+            background: var(--accent);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        header h1 span {
+            color: var(--accent);
+        }
+
+        .badge {
+            margin-left: auto;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent2);
+            border: 1px solid var(--accent2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            opacity: 0.8;
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface2);
+        }
+
+        .panel-header .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        .panel-header h2 {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .panel-body {
+            padding: 20px;
+        }
+
+        /* Left column */
+        .left-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Form elements */
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 13px;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+        }
+
+        select option { background: var(--surface2); }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 20px;
+            border-radius: 8px;
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover { background: #7c74ff; transform: translateY(-1px); }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--error);
+            border: 1px solid rgba(255,107,107,0.3);
+        }
+
+        .btn-danger:hover { background: rgba(255,107,107,0.1); }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        /* Right column */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 0;
+        }
+
+        /* Token display */
+        .token-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            font-family: var(--mono);
+            font-size: 11px;
+            word-break: break-all;
+            line-height: 1.7;
+            min-height: 60px;
+            transition: border-color 0.3s;
+        }
+
+        .token-box.has-token { border-color: rgba(108,99,255,0.4); }
+
+        .token-part-header { color: #ff6b6b; }
+        .token-part-payload { color: #ffa94d; }
+        .token-part-sig { color: #6c63ff; }
+        .token-dot { color: var(--muted); }
+
+        /* Status badge */
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-row.success { background: rgba(0,212,170,0.1); color: var(--success); border: 1px solid rgba(0,212,170,0.2); }
+        .status-row.error   { background: rgba(255,107,107,0.1); color: var(--error);   border: 1px solid rgba(255,107,107,0.2); }
+        .status-row.info    { background: rgba(108,99,255,0.1);  color: var(--accent);  border: 1px solid rgba(108,99,255,0.2); }
+        .status-row.warning { background: rgba(255,169,77,0.1);  color: var(--warning); border: 1px solid rgba(255,169,77,0.2); }
+
+        /* Payload grid */
+        .payload-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .payload-row {
+            display: flex;
+            gap: 0;
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+
+        .payload-row:hover { background: var(--surface2); }
+
+        .payload-key   { color: var(--accent);  min-width: 130px; }
+        .payload-value { color: var(--accent2); word-break: break-all; }
+        .payload-value.role-tag {
+            background: rgba(108,99,255,0.2);
+            color: var(--accent);
+            padding: 1px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        /* Log */
+        .log-area {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            font-family: var(--mono);
+            font-size: 11px;
+            max-height: 200px;
+            overflow-y: auto;
+            line-height: 1.8;
+        }
+
+        .log-area::-webkit-scrollbar { width: 4px; }
+        .log-area::-webkit-scrollbar-track { background: transparent; }
+        .log-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .log-entry { display: flex; gap: 8px; }
+        .log-time  { color: var(--muted); flex-shrink: 0; }
+        .log-msg.ok   { color: var(--success); }
+        .log-msg.err  { color: var(--error); }
+        .log-msg.info { color: var(--accent); }
+        .log-msg.warn { color: var(--warning); }
+
+        /* Response panel */
+        .response-raw {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            font-family: var(--mono);
+            font-size: 11px;
+            max-height: 180px;
+            overflow-y: auto;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .json-key    { color: var(--accent); }
+        .json-str    { color: var(--accent2); }
+        .json-num    { color: var(--warning); }
+        .json-bool   { color: var(--error); }
+        .json-null   { color: var(--muted); }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        /* Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            width: 14px; height: 14px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: none;
+        }
+
+        .btn.loading .spinner { display: block; }
+        .btn.loading .btn-label { opacity: 0.5; }
+
+        /* Token status indicator */
+        .token-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .token-indicator .dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--muted);
+            transition: background 0.3s;
+        }
+
+        .token-indicator.active .dot { background: var(--success); box-shadow: 0 0 6px var(--success); }
+        .token-indicator.active { color: var(--success); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+        .animate-in { animation: fadeIn 0.25s ease forwards; }
+
+        .empty-state {
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 12px;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+    <header>
+        <div class="logo">🔐</div>
+        <h1>JWT Demo — <span>DeliveryTech</span></h1>
+        <div class="badge">Spring Security 6 + JJWT</div>
+    </header>
+
+    <!-- LEFT: Forms -->
+    <div class="left-col">
+
+        <!-- Register -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="dot" style="background: var(--accent2)"></div>
+                <h2>Register</h2>
+            </div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+                <div class="field">
+                    <label>Nome</label>
+                    <input id="reg-nome" value="João Silva">
+                </div>
+                <div class="field">
+                    <label>Email</label>
+                    <input id="reg-email" value="joao@email.com">
+                </div>
+                <div class="field">
+                    <label>Senha</label>
+                    <input id="reg-senha" type="password" value="123456">
+                </div>
+                <div class="field">
+                    <label>Role</label>
+                    <select id="reg-role">
+                        <option value="CLIENTE">CLIENTE</option>
+                        <option value="RESTAURANTE">RESTAURANTE</option>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="ENTREGADOR">ENTREGADOR</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="btn-register" onclick="register()">
+                    <div class="spinner"></div>
+                    <span class="btn-label">Registrar usuário</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Login -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="dot" style="background: var(--accent)"></div>
+                <h2>Login</h2>
+            </div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+                <div class="field">
+                    <label>Email</label>
+                    <input id="login-email" value="joao@email.com">
+                </div>
+                <div class="field">
+                    <label>Senha</label>
+                    <input id="login-senha" type="password" value="123456">
+                </div>
+                <button class="btn btn-primary" id="btn-login" onclick="login()">
+                    <div class="spinner"></div>
+                    <span class="btn-label">Autenticar → obter token</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="dot" style="background: var(--warning)"></div>
+                <h2>Ações com Token</h2>
+            </div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:8px">
+                <div id="token-indicator" class="token-indicator">
+                    <div class="dot"></div>
+                    <span id="token-status-text">Nenhum token armazenado</span>
+                </div>
+                <div class="btn-grid">
+                    <button class="btn btn-secondary" onclick="showMe()">
+                        <span class="btn-label">GET /me</span>
+                    </button>
+                    <button class="btn btn-danger" onclick="clearToken()">
+                        <span class="btn-label">Limpar token</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Output -->
+    <div class="right-col">
+
+        <!-- Token display -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="dot" style="background: var(--warning)"></div>
+                <h2>Access Token (JWT)</h2>
+            </div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;gap:16px;font-family:var(--mono);font-size:11px;">
+                    <span><span class="token-part-header">■</span> Header</span>
+                    <span><span class="token-part-payload">■</span> Payload</span>
+                    <span><span class="token-part-sig">■</span> Assinatura</span>
+                </div>
+                <div id="token-display" class="token-box">
+                    <span class="empty-state">Faça login para ver o token JWT</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payload decoded -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="dot" style="background: var(--accent2)"></div>
+                <h2>Payload Decodificado</h2>
+            </div>
+            <div class="panel-body">
+                <div id="payload-display" class="payload-grid">
+                    <div class="empty-state">O payload aparece aqui após o login</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Last response -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="dot" style="background: var(--accent)"></div>
+                <h2>Última Resposta da API</h2>
+                <span id="response-status-badge" style="margin-left:auto"></span>
+            </div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
+                <div id="response-status"></div>
+                <div id="response-raw" class="response-raw"><span class="empty-state">Nenhuma requisição feita ainda</span></div>
+            </div>
+        </div>
+
+        <!-- Log -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="dot" style="background: var(--muted)"></div>
+                <h2>Log de Atividade</h2>
+            </div>
+            <div class="panel-body">
+                <div id="log-area" class="log-area">
+                    <div class="log-entry"><span class="log-time">--:--:--</span><span class="log-msg info">Pronto. Aguardando ações...</span></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const BASE_URL = 'http://localhost:8080';
+let storedToken = null;
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+
+function now() {
+    return new Date().toLocaleTimeString('pt-BR');
+}
+
+function log(msg, type = 'info') {
+    const area = document.getElementById('log-area');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry animate-in';
+    entry.innerHTML = `<span class="log-time">${now()}</span><span class="log-msg ${type}">${msg}</span>`;
+    area.appendChild(entry);
+    area.scrollTop = area.scrollHeight;
+}
+
+function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.classList.toggle('loading', loading);
+    btn.disabled = loading;
+}
+
+function updateTokenIndicator() {
+    const ind = document.getElementById('token-indicator');
+    const txt = document.getElementById('token-status-text');
+    if (storedToken) {
+        ind.className = 'token-indicator active';
+        txt.textContent = 'Token ativo armazenado';
+    } else {
+        ind.className = 'token-indicator';
+        txt.textContent = 'Nenhum token armazenado';
+    }
+}
+
+function syntaxHighlight(json) {
+    const str = typeof json === 'string' ? json : JSON.stringify(json, null, 2);
+    return str.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) return `<span class="json-key">${match}</span>`;
+            return `<span class="json-str">${match}</span>`;
+        }
+        if (/true|false/.test(match)) return `<span class="json-bool">${match}</span>`;
+        if (/null/.test(match)) return `<span class="json-null">${match}</span>`;
+        return `<span class="json-num">${match}</span>`;
+    });
+}
+
+function showResponse(status, data, endpoint) {
+    const statusEl = document.getElementById('response-status');
+    const rawEl = document.getElementById('response-raw');
+    const badgeEl = document.getElementById('response-status-badge');
+
+    const ok = status >= 200 && status < 300;
+    const cls = ok ? 'success' : (status >= 500 ? 'error' : 'warning');
+    const icon = ok ? '✓' : '✗';
+
+    statusEl.innerHTML = `
+        <div class="status-row ${cls} animate-in">
+            ${icon} &nbsp; ${status} — ${endpoint}
+        </div>`;
+
+    badgeEl.innerHTML = `<span style="font-family:var(--mono);font-size:11px;color:var(--${cls === 'success' ? 'success' : cls === 'error' ? 'error' : 'warning'})">${status}</span>`;
+
+    rawEl.innerHTML = syntaxHighlight(data);
+}
+
+// ── Token display ──────────────────────────────────────────────────────────
+
+function renderToken(token) {
+    const parts = token.split('.');
+    const display = document.getElementById('token-display');
+    display.className = 'token-box has-token animate-in';
+    display.innerHTML =
+        `<span class="token-part-header">${parts[0]}</span>` +
+        `<span class="token-dot">.</span>` +
+        `<span class="token-part-payload">${parts[1]}</span>` +
+        `<span class="token-dot">.</span>` +
+        `<span class="token-part-sig">${parts[2]}</span>`;
+}
+
+function renderPayload(token) {
+    try {
+        const raw = token.split('.')[1];
+        const p = JSON.parse(atob(raw));
+        const grid = document.getElementById('payload-display');
+        grid.innerHTML = '';
+
+        const rows = [
+            { key: 'userId',        val: p.userId,    fmt: v => `<span class="payload-value">${v}</span>` },
+            { key: 'nome',          val: p.nome,      fmt: v => `<span class="payload-value">"${v}"</span>` },
+            { key: 'sub (email)',   val: p.sub,       fmt: v => `<span class="payload-value">"${v}"</span>` },
+            { key: 'role',          val: p.role,      fmt: v => `<span class="payload-value role-tag">${v}</span>` },
+            { key: 'restauranteId', val: p.restauranteId, fmt: v => `<span class="payload-value">${v ?? '<span style="color:var(--muted)">null</span>'}</span>` },
+            { key: 'iat (emitido)', val: p.iat,       fmt: v => `<span class="payload-value">${new Date(v*1000).toLocaleString('pt-BR')}</span>` },
+            { key: 'exp (expira)',  val: p.exp,       fmt: v => `<span class="payload-value">${new Date(v*1000).toLocaleString('pt-BR')}</span>` },
+        ];
+
+        rows.forEach(r => {
+            if (r.val === undefined) return;
+            const div = document.createElement('div');
+            div.className = 'payload-row animate-in';
+            div.innerHTML = `<span class="payload-key">${r.key}</span>${r.fmt(r.val)}`;
+            grid.appendChild(div);
+        });
+    } catch(e) {
+        log('Erro ao decodificar payload: ' + e.message, 'err');
+    }
+}
+
+// ── API calls ──────────────────────────────────────────────────────────────
+
+async function register() {
+    const body = {
+        nome:  document.getElementById('reg-nome').value,
+        email: document.getElementById('reg-email').value,
+        senha: document.getElementById('reg-senha').value,
+        role:  document.getElementById('reg-role').value
+    };
+
+    setLoading('btn-register', true);
+    log(`POST /api/auth/register — ${body.email} [${body.role}]`, 'info');
+
+    try {
+        const res = await fetch(`${BASE_URL}/api/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        showResponse(res.status, data, 'POST /api/auth/register');
+
+        if (res.status === 201) {
+            log(`Usuário criado: ${data.nome} (${data.email})`, 'ok');
+        } else {
+            log(`Falha no registro: ${JSON.stringify(data)}`, 'err');
+        }
+    } catch(e) {
+        log('Erro de conexão: ' + e.message, 'err');
+        showResponse(0, { error: e.message }, 'POST /api/auth/register');
+    }
+
+    setLoading('btn-register', false);
+}
+
+async function login() {
+    const body = {
+        email: document.getElementById('login-email').value,
+        senha: document.getElementById('login-senha').value
+    };
+
+    setLoading('btn-login', true);
+    log(`POST /api/auth/login — ${body.email}`, 'info');
+
+    try {
+        const res = await fetch(`${BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        showResponse(res.status, data, 'POST /api/auth/login');
+
+        if (data.token) {
+            storedToken = data.token;
+            renderToken(storedToken);
+            renderPayload(storedToken);
+            updateTokenIndicator();
+            log('Token JWT recebido e decodificado ✓', 'ok');
+            log(`Expira em: ${new Date(Date.now() + data.expiracao).toLocaleString('pt-BR')}`, 'info');
+        } else {
+            log('Login falhou: ' + (typeof data === 'string' ? data : JSON.stringify(data)), 'err');
+        }
+    } catch(e) {
+        log('Erro de conexão: ' + e.message, 'err');
+        showResponse(0, { error: e.message }, 'POST /api/auth/login');
+    }
+
+    setLoading('btn-login', false);
+}
+
+async function showMe() {
+    if (!storedToken) {
+        log('Sem token — faça login primeiro', 'warn');
+        return;
+    }
+    log('GET /api/auth/me — enviando Bearer token', 'info');
+
+    try {
+        const res = await fetch(`${BASE_URL}/api/auth/me`, {
+            headers: { 'Authorization': `Bearer ${storedToken}` }
+        });
+        const data = await res.json();
+        showResponse(res.status, data, 'GET /api/auth/me');
+
+        if (res.ok) {
+            log(`Usuário autenticado: ${data.nome} [${data.role}]`, 'ok');
+        } else {
+            log('Token rejeitado pelo servidor', 'err');
+        }
+    } catch(e) {
+        log('Erro de conexão: ' + e.message, 'err');
+    }
+}
+
+function clearToken() {
+    storedToken = null;
+    document.getElementById('token-display').className = 'token-box';
+    document.getElementById('token-display').innerHTML = '<span class="empty-state">Faça login para ver o token JWT</span>';
+    document.getElementById('payload-display').innerHTML = '<div class="empty-state">O payload aparece aqui após o login</div>';
+    updateTokenIndicator();
+    log('Token removido da memória', 'warn');
+}
+</script>
+
+</body>
+</html>

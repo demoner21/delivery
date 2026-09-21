@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -38,8 +40,12 @@ public class PedidoController {
     private PedidoService pedidoService;
 
     @PostMapping
+    // Anotação RBAC deifinindo o papel e a autorizaçaõa necessaria para acessar a rota
+    @PreAuthorize("hasRole('CLIENTE')")
     @Operation(summary = "Criar pedido",
-               description = "Cria um novo pedido no sistema")
+               description = "Cria um novo pedido no sistema",
+               // anotação de definir que uma rota e pprotejida e precisa de autenticação
+               security = @SecurityRequirement(name = "Bearer Authentication"))
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Pedido criado com sucesso"),
         @ApiResponse(responseCode = "400", description = "Dados inválidos"),
