@@ -2,6 +2,7 @@ package com.deliverytech.delivery_api.security;
 
 import com.deliverytech.delivery_api.entity.Usuario;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -92,7 +93,11 @@ public class JwtUtil {
     }
 
     public Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        try {
+            return extractExpiration(token).before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true;
+        }
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
