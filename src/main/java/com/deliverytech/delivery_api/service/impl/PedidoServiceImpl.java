@@ -94,8 +94,8 @@ public class PedidoServiceImpl implements PedidoService {
         pedido.setCliente(cliente);
         pedido.setRestaurante(restaurante);
         pedido.setDataPedido(LocalDateTime.now());
-        setPedidoStatus(pedido, StatusPedido.PENDENTE);
-        setProperty(pedido, "EnderecoEntrega", dto.getEnderecoEntrega());
+        pedido.setStatusPedido(StatusPedido.PENDENTE);
+        // setProperty(pedido, "EnderecoEntrega", dto.getEnderecoEntrega());
         pedido.setSubtotal(subtotal);
         pedido.setTaxaEntrega(taxaEntrega);
         pedido.setValorTotal(valorTotal);
@@ -143,7 +143,7 @@ public class PedidoServiceImpl implements PedidoService {
         List<Pedido> pedidos = pedidoRepository.findAll().stream()
             .filter(pedido -> pedido.getRestaurante() != null 
                 && restauranteId.equals(pedido.getRestaurante().getId()))
-            .filter(pedido -> status == null || status.equals(getPedidoStatus(pedido)))
+            .filter(pedido -> status == null || status.equals(pedido.getStatusPedido()))
             .collect(Collectors.toList());
 
         return pedidos.stream()
@@ -164,13 +164,13 @@ public class PedidoServiceImpl implements PedidoService {
             .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado"));
 
         // Validar transições de status permitidas
-        StatusPedido statusAtual = getPedidoStatus(pedido);
+        StatusPedido statusAtual = pedido.getStatusPedido();
         if (!isTransicaoValida(statusAtual, novoStatus)) {
             throw new BusinessException("Transição de status inválida: " +
             statusAtual + " -> " + novoStatus);
         }
 
-        setPedidoStatus(pedido, novoStatus);
+        pedido.setStatusPedido(novoStatus);
         Pedido pedidoAtualizado = pedidoRepository.save(pedido);
 
         return modelMapper.map(pedidoAtualizado, PedidoResponseDTO.class);
@@ -199,46 +199,15 @@ public class PedidoServiceImpl implements PedidoService {
         Pedido pedido = pedidoRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado"));
 
-        StatusPedido statusAtual = getPedidoStatus(pedido);
+        StatusPedido statusAtual = pedido.getStatusPedido();
         if (!podeSerCancelado(statusAtual)) {
             throw new BusinessException("Pedido não pode ser cancelado no status: " + statusAtual);
         }
 
-        setPedidoStatus(pedido, StatusPedido.CANCELADO);
+        pedido.setStatusPedido(StatusPedido.CANCELADO);
         pedidoRepository.save(pedido);
     }
 
-    private StatusPedido getPedidoStatus(Pedido pedido) {
-        Object status = getProperty(pedido, "Status");
-        return status instanceof StatusPedido ? (StatusPedido) status : null;
-    }
-
-    private void setPedidoStatus(Pedido pedido, StatusPedido status) {
-        setProperty(pedido, "Status", status);
-    }
-
-    private Object getProperty(Object target, String property) {
-        try {
-            Method method = target.getClass().getMethod("get" + property);
-            return method.invoke(target);
-        } catch (ReflectiveOperationException e) {
-            throw new BusinessException("Propriedade não encontrada: " + property);
-        }
-    }
-
-    private void setProperty(Object target, String property, Object value) {
-        try {
-            for (Method method : target.getClass().getMethods()) {
-                if (method.getName().equals("set" + property) && method.getParameterCount() == 1) {
-                    method.invoke(target, value);
-                    return;
-                }
-            }
-            throw new NoSuchMethodException(property);
-        } catch (ReflectiveOperationException e) {
-            throw new BusinessException("Propriedade não encontrada: " + property);
-        }
-    }
 
     private boolean isTransicaoValida(StatusPedido statusAtual, StatusPedido novoStatus) {
         // Implementar lógica de transições válidas
