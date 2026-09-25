@@ -1,0 +1,65 @@
+# Informações da aplicação
+info:
+  app:
+    name: Sistema de Delivery
+    description: API REST para sistema de delivery com observabilidade
+    version: 1.0.0
+    encoding: UTF-8
+    java:
+      version: 21
+  team:
+    name: Equipe de Desenvolvimento
+    email: dev@delivery.com
+
+# Configuração consolidada do Spring Boot Actuator e Tracing
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+      base-path: /actuator
+      cors:
+        allowed-origins: "*" # voce vai colocar um IP seguro aqui
+        allowed-methods: GET,POST
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    info:
+      enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  health:
+    diskspace:
+      enabled: true
+      threshold: 10GB
+    db:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    git:
+      mode: full
+    build:
+      enabled: true
+  # Configurações de Tracing (agora dentro do mesmo bloco management)
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: "http://localhost:9411/api/v2/spans"
+
+# Configuração de segurança para endpoints
+spring:
+  security:
+    user:
+      name: 
+      password: 
+      roles: ACTUATOR
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
