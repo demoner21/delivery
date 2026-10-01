@@ -12,6 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CachePut;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +31,11 @@ public class ProdutoServiceImpl implements ProdutoService {
     private RestauranteRepository restauranteRepository;
 
     @Override
+    /*
+    Não se faz cache de cadastros no geral pois, com a mesma chave, 
+    pois o #id ele ainda não existe como um parâmetro.
+    Pode ser usando, se quiser, @CachePut(value = "produtos", key = "#result.id")
+    */
     public ProdutoResponseDTO cadastrarProduto(ProdutoDTO dto) {
         // buscando o restaurante pelo id e lançando exceção caso não seja encontrado
         Restaurante restaurante = restauranteRepository.findById(dto.getRestauranteId())
@@ -42,13 +51,22 @@ public class ProdutoServiceImpl implements ProdutoService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "produtos", key = "#id")
     public ProdutoResponseDTO buscarProdutoPorId(Long id) {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado: " + id));
+    
         return toResponseDTO(produto);
     }
 
     @Override
+    @CachePut(value = "produtos", key = "#id") // Atuallizar o cache com o novo valor
     public ProdutoResponseDTO atualizarProduto(Long id, ProdutoDTO dto) {
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado: " + id));
@@ -80,6 +98,7 @@ public class ProdutoServiceImpl implements ProdutoService {
     }
 
     @Override
+    @CachePut(value = "produtos", key = "#id")
     public ProdutoResponseDTO alterarDisponibilidade(Long id) {
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado: " + id));
