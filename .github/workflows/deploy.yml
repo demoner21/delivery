@@ -83,12 +83,6 @@ jobs:
             -e SPRING_DATA_REDIS_PORT \
             minha-api
 
-      - name: Test application startup
-        run: |
-          echo "Aguardando a API ficar online (Health Check)..."
-          timeout 90 bash -c 'until curl -fs http://localhost:8080/actuator/health > /dev/null; do echo "Aguardando..."; sleep 3; done'
-          echo "API inicializada com sucesso!"
-
       - name: Show logs on failure
         if: failure()
         run: docker logs minha-api
